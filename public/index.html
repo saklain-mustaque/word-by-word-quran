@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word by Word Quran PDF Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📖 Word by Word Quran PDF Generator</h1>
+            <p>Generate beautiful PDF files with Arabic text and detailed word-by-word analysis</p>
+        </header>
+
+        <main>
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="surahSelect">Select Surah (Chapter):</label>
+                    <select id="surahSelect" class="form-control">
+                        <option value="">Loading surahs...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="verseRange">Verse Range (optional):</label>
+                    <div class="verse-range">
+                        <input type="number" id="verseStart" placeholder="From verse" min="1" class="form-control">
+                        <span>to</span>
+                        <input type="number" id="verseEnd" placeholder="To verse" min="1" class="form-control">
+                    </div>
+                    <small>Leave empty to include all verses</small>
+                </div>
+
+                <div class="form-group">
+                    <label>PDF Options:</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includeTransliteration" checked>
+                            Include Transliteration
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includeTranslation" checked>
+                            Include Translation
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includeGrammar" checked>
+                            Include Grammar Notes
+                        </label>
+                    </div>
+                </div>
+
+                <button id="generatePdf" class="btn-primary" disabled>
+                    <span id="btnText">Generate PDF</span>
+                    <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+                </button>
+            </div>
+
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <h3>Preview</h3>
+                <div id="previewContent" class="preview-content"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>© 2024 Word by Word Quran PDF Generator</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
