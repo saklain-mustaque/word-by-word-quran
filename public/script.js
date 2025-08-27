@@ -104,10 +104,12 @@ class QuranPDFGenerator {
             `;
             
             words.forEach((word, wordIndex) => {
-                const description = this.generateWordDescription(word, wordIndex, translation);
+                // Decode the word for proper display in preview
+                const decodedWord = this.decodeUnicodeText(word);
+                const description = this.generateWordDescription(decodedWord, wordIndex, translation);
                 previewHTML += `
                     <tr>
-                        <td class="arabic-text">${word}</td>
+                        <td class="arabic-text">${decodedWord}</td>
                         <td class="description-text">${description}</td>
                     </tr>
                 `;
@@ -128,10 +130,23 @@ class QuranPDFGenerator {
         document.getElementById('previewSection').style.display = 'none';
     }
 
+    // Decode Unicode escape sequences to proper Arabic text
+    decodeUnicodeText(text) {
+        try {
+            // Handle Unicode escape sequences like \u0628\u0650\u0633
+            return text.replace(/\\u[\dA-F]{4}/gi, function (match) {
+                return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+            });
+        } catch (error) {
+            console.warn('Error decoding Unicode text:', error);
+            return text;
+        }
+    }
+
     parseArabicWords(arabicText) {
-        // Split Arabic text by spaces, preserving diacritics and special characters
-        // This ensures we get the original Arabic text as intended
-        return arabicText.split(/\s+/).filter(word => word.trim().length > 0);
+        // First decode Unicode escape sequences, then split by spaces
+        const decodedText = this.decodeUnicodeText(arabicText);
+        return decodedText.split(/\s+/).filter(word => word.trim().length > 0);
     }
 
     generateWordDescription(word, index, verseTranslation) {
@@ -250,8 +265,9 @@ class QuranPDFGenerator {
 
                 // Add all words from this verse
                 words.forEach((word) => {
-                    // Use the raw Arabic text without any processing
-                    allTableData.push([word, '']); // Empty description as requested
+                    // Decode Unicode and use the proper Arabic text
+                    const decodedWord = this.decodeUnicodeText(word);
+                    allTableData.push([decodedWord, '']); // Empty description as requested
                 });
             }
 

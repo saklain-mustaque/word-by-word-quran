@@ -27,6 +27,30 @@ app.get('/api/surahs', async (req, res) => {
     }
 });
 
+// Helper function to decode Unicode escape sequences
+function decodeUnicodeText(text) {
+    try {
+        if (typeof text === 'string') {
+            // Handle Unicode escape sequences like \u0628\u0650\u0633
+            return text.replace(/\\u[\dA-F]{4}/gi, function (match) {
+                return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+            });
+        }
+        return text;
+    } catch (error) {
+        console.warn('Error decoding Unicode text:', error);
+        return text;
+    }
+}
+
+// Helper function to decode Arabic text in ayahs
+function decodeAyahs(ayahs) {
+    return ayahs.map(ayah => ({
+        ...ayah,
+        text: decodeUnicodeText(ayah.text)
+    }));
+}
+
 // Get word-by-word data for a specific surah
 app.get('/api/surah/:number', async (req, res) => {
     try {
@@ -42,10 +66,21 @@ app.get('/api/surah/:number', async (req, res) => {
         // Since comprehensive word-by-word APIs are limited, I'll structure it properly
         const wordByWordResponse = await axios.get(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
         
+        // Decode Unicode in the Arabic text
+        const decodedSurah = {
+            ...arabicResponse.data.data,
+            ayahs: decodeAyahs(arabicResponse.data.data.ayahs)
+        };
+        
+        const decodedWordByWord = {
+            ...wordByWordResponse.data.data,
+            ayahs: decodeAyahs(wordByWordResponse.data.data.ayahs)
+        };
+        
         const result = {
-            surah: arabicResponse.data.data,
+            surah: decodedSurah,
             translation: translationResponse.data.data,
-            wordByWord: wordByWordResponse.data.data
+            wordByWord: decodedWordByWord
         };
         
         res.json(result);
@@ -65,9 +100,9 @@ app.get('/api/verse/:surah/:verse', async (req, res) => {
         const response = await axios.get(`https://api.alquran.cloud/v1/ayah/${surah}:${verse}/ar.alafasy`);
         const translationResponse = await axios.get(`https://api.alquran.cloud/v1/ayah/${surah}:${verse}/en.sahih`);
         
-        // Mock word-by-word structure - in a real implementation, this would come from a specialized API
-        const arabicText = response.data.data.text;
-        const words = arabicText.split(' ');
+        // Decode the Arabic text
+        const decodedText = decodeUnicodeText(response.data.data.text);
+        const words = decodedText.split(' ');
         
         const wordByWord = words.map((word, index) => ({
             arabic: word,
@@ -76,8 +111,14 @@ app.get('/api/verse/:surah/:verse', async (req, res) => {
             grammar: `grammar${index + 1}`        // This would be actual grammar notes
         }));
         
+        // Return decoded verse data
+        const decodedVerse = {
+            ...response.data.data,
+            text: decodedText
+        };
+        
         const result = {
-            verse: response.data.data,
+            verse: decodedVerse,
             translation: translationResponse.data.data,
             wordByWord: wordByWord
         };
