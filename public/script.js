@@ -129,8 +129,8 @@ class QuranPDFGenerator {
     }
 
     parseArabicWords(arabicText) {
-        // Remove diacritics for word separation, then split
-        const cleanText = arabicText.replace(/[\u064B-\u065F\u0670\u0671]/g, '');
+        // Split Arabic text by spaces, preserving diacritics and special characters
+        // This ensures we get the original Arabic text as intended
         return arabicText.split(/\s+/).filter(word => word.trim().length > 0);
     }
 
@@ -221,91 +221,126 @@ class QuranPDFGenerator {
                 format: 'a4'
             });
 
-            // Set up fonts and RTL support
-            doc.setFont('helvetica');
-            
             const verseStart = parseInt(document.getElementById('verseStart').value) || 1;
             const verseEnd = parseInt(document.getElementById('verseEnd').value) || this.currentSurahData.surah.ayahs.length;
             const filteredVerses = this.currentSurahData.surah.ayahs.slice(verseStart - 1, verseEnd);
 
             // Add title
             doc.setFontSize(18);
-            doc.text(`${this.currentSurahData.surah.englishName} (${this.currentSurahData.surah.name})`, 105, 20, { align: 'center' });
+            doc.text(`${this.currentSurahData.surah.englishName}`, 105, 20, { align: 'center' });
             doc.setFontSize(12);
             doc.text(`Verses ${verseStart} to ${verseEnd}`, 105, 30, { align: 'center' });
             doc.text('Word by Word Analysis', 105, 40, { align: 'center' });
 
-            let yPosition = 60;
-            const pageHeight = doc.internal.pageSize.height;
-            const margin = 20;
-
+            // Create one single table with all words from all verses
+            const allTableData = [];
+            
             for (let i = 0; i < filteredVerses.length; i++) {
                 const ayah = filteredVerses[i];
                 const verseNumber = verseStart + i;
                 const words = this.parseArabicWords(ayah.text);
-                const translation = this.currentSurahData.translation.ayahs[verseStart - 1 + i]?.text || '';
 
-                // Check if we need a new page
-                const estimatedHeight = 20 + (words.length * 15);
-                if (yPosition + estimatedHeight > pageHeight - margin) {
-                    doc.addPage();
-                    yPosition = 20;
+                // Add verse separator row
+                if (i > 0) {
+                    allTableData.push(['', '']); // Empty row as separator
                 }
+                
+                // Add verse number row
+                allTableData.push([`Verse ${verseNumber}`, '']);
 
-                // Add verse number
-                doc.setFontSize(14);
-                doc.setFont('helvetica', 'bold');
-                doc.text(`Verse ${verseNumber}`, margin, yPosition);
-                yPosition += 15;
-
-                // Create table data for this verse
-                const tableData = words.map((word, wordIndex) => {
-                    const description = this.generateWordDescription(word, wordIndex, translation);
-                    // Remove HTML tags for PDF
-                    const cleanDescription = description.replace(/<[^>]*>/g, '\n').replace(/\n+/g, '\n').trim();
-                    return [word, cleanDescription];
+                // Add all words from this verse
+                words.forEach((word) => {
+                    // Use the raw Arabic text without any processing
+                    allTableData.push([word, '']); // Empty description as requested
                 });
-
-                // Add table with RTL support
-                doc.autoTable({
-                    startY: yPosition,
-                    head: [['Arabic Text', 'Description/Notes']],
-                    body: tableData,
-                    theme: 'grid',
-                    styles: {
-                        fontSize: 10,
-                        cellPadding: 5,
-                        textColor: [0, 0, 0],
-                        lineColor: [128, 128, 128],
-                        lineWidth: 0.1
-                    },
-                    headStyles: {
-                        fillColor: [143, 188, 143],
-                        textColor: [0, 0, 0],
-                        fontStyle: 'bold'
-                    },
-                    columnStyles: {
-                        0: { 
-                            cellWidth: 60, 
-                            halign: 'right',
-                            fontSize: 12,
-                            fontStyle: 'bold'
-                        },
-                        1: { 
-                            cellWidth: 120, 
-                            halign: 'left',
-                            fontSize: 9
-                        }
-                    },
-                    margin: { left: margin, right: margin },
-                    tableWidth: 'wrap'
-                });
-
-                yPosition = doc.lastAutoTable.finalY + 20;
             }
+
+            // Create single table with all data
+            doc.autoTable({
+                startY: 50,
+                head: [['Arabic Text', 'Description/Notes']],
+                body: allTableData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 12,
+                    cellPadding: 10,
+                    textColor: [0, 0, 0],
+                    lineColor: [128, 128, 128],
+                    lineWidth: 0.2,
+                    font: 'helvetica',
+                    direction: 'rtl'
+                },
+                headStyles: {
+                    fillColor: [143, 188, 143],
+                    textColor: [0, 0, 0],
+                    fontStyle: 'bold',
+                    halign: 'center',
+                    fontSize: 14
+                },
+                columnStyles: {
+                    0: { 
+                        cellWidth: 80,
+                        halign: 'right',
+                        fontSize: 16,
+                        fontStyle: 'normal',
+                        font: 'helvetica',
+                        // Better spacing for Arabic text
+                        cellPadding: { top: 12, bottom: 12, left: 15, right: 15 }
+                    },
+                    1: { 
+                        cellWidth: 100,
+                        halign: 'left',
+                        fontSize: 10,
+                        // Ensure description column stays empty
+                        cellPadding: { top: 12, bottom: 12, left: 15, right: 15 }
+                    }
+                },
+                margin: { left: 15, right: 15 },
+                tableWidth: 'wrap',
+                // Custom row styling
+                didParseCell: function (data) {
+                    // Style verse number rows differently
+                    if (data.cell.text[0] && data.cell.text[0].startsWith('Verse ')) {
+                        data.cell.styles.fillColor = [200, 220, 200];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.halign = 'center';
+                        data.cell.styles.fontSize = 12;
+                    }
+                    // Style empty separator rows
+                    else if (data.cell.text[0] === '' && data.row.index > 0 && data.cell.text[0] !== 'Verse') {
+                        data.cell.styles.fillColor = [248, 248, 248];
+                        data.cell.styles.minCellHeight = 5;
+                    }
+                    
+                    // Ensure Arabic text is properly aligned and sized
+                    if (data.column.index === 0 && data.cell.text[0] && !data.cell.text[0].startsWith('Verse') && data.cell.text[0] !== '') {
+                        data.cell.styles.halign = 'right';
+                        data.cell.styles.fontSize = 16;
+                        data.cell.styles.fontStyle = 'normal';
+                        // Add more padding for better Arabic text display
+                        data.cell.styles.cellPadding = { top: 15, bottom: 15, left: 20, right: 20 };
+                    }
+                    
+                    // Ensure description column is truly empty and properly formatted
+                    if (data.column.index === 1 && !data.cell.text[0].startsWith('Verse')) {
+                        data.cell.text = [''];  // Force empty
+                        data.cell.styles.fillColor = [255, 255, 255];
+                    }
+                },
+                
+                // Better handling of text rendering
+                didDrawCell: function(data) {
+                    // Custom Arabic text rendering if needed
+                    if (data.column.index === 0 && data.cell.text[0] && !data.cell.text[0].startsWith('Verse') && data.cell.text[0] !== '') {
+                        // The text is already rendered by autoTable, but we ensure it's right-aligned
+                    }
+                }
+            });
 
             // Add footer
             const totalPages = doc.internal.getNumberOfPages();
+            const pageHeight = doc.internal.pageSize.height;
+            
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
                 doc.setFontSize(8);

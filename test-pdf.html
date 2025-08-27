@@ -16,14 +16,22 @@
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
             
-            // Test Arabic text
+            // Test data with single table format and empty descriptions
             const testData = [
-                ['بِسْمِ ٱللَّهِ', 'In the name of Allah - Noun, genitive case with preposition'],
-                ['ٱلرَّحْمَٰنِ', 'The Most Gracious - Adjective, genitive case'],
-                ['ٱلرَّحِيمِ', 'The Most Merciful - Adjective, genitive case']
+                ['Verse 1', ''],
+                ['بِسْمِ', ''],
+                ['ٱللَّهِ', ''],
+                ['ٱلرَّحْمَٰنِ', ''],
+                ['ٱلرَّحِيمِ', ''],
+                ['', ''], // Separator
+                ['Verse 2', ''],
+                ['ٱلْحَمْدُ', ''],
+                ['لِلَّهِ', ''],
+                ['رَبِّ', ''],
+                ['ٱلْعَالَمِينَ', '']
             ];
             
-            doc.text('Al-Fatiha Word by Word Analysis', 105, 20, { align: 'center' });
+            doc.text('Al-Fatiha Word by Word Analysis (Test)', 105, 20, { align: 'center' });
             
             doc.autoTable({
                 startY: 40,
@@ -32,24 +40,52 @@
                 theme: 'grid',
                 styles: {
                     fontSize: 12,
-                    cellPadding: 5
+                    cellPadding: 10,
+                    textColor: [0, 0, 0],
+                    lineColor: [128, 128, 128],
+                    lineWidth: 0.2
+                },
+                headStyles: {
+                    fillColor: [143, 188, 143],
+                    textColor: [0, 0, 0],
+                    fontStyle: 'bold',
+                    halign: 'center'
                 },
                 columnStyles: {
                     0: { 
-                        cellWidth: 60, 
+                        cellWidth: 80, 
                         halign: 'right',
-                        fontSize: 14,
-                        fontStyle: 'bold'
+                        fontSize: 16,
+                        fontStyle: 'normal'
                     },
                     1: { 
-                        cellWidth: 120, 
-                        halign: 'left'
+                        cellWidth: 100, 
+                        halign: 'left',
+                        fontSize: 10
+                    }
+                },
+                didParseCell: function (data) {
+                    // Style verse number rows
+                    if (data.cell.text[0] && data.cell.text[0].startsWith('Verse ')) {
+                        data.cell.styles.fillColor = [200, 220, 200];
+                        data.cell.styles.fontStyle = 'bold';
+                        data.cell.styles.halign = 'center';
+                    }
+                    // Style separator rows
+                    else if (data.cell.text[0] === '' && data.row.index > 0) {
+                        data.cell.styles.fillColor = [248, 248, 248];
+                        data.cell.styles.minCellHeight = 5;
+                    }
+                    // Ensure description column is empty
+                    if (data.column.index === 1 && !data.cell.text[0].startsWith('Verse')) {
+                        data.cell.text = [''];
+                        data.cell.styles.fillColor = [255, 255, 255];
                     }
                 }
             });
             
-            doc.save('test-quran-pdf.pdf');
-            alert('Test PDF generated successfully!');
+            doc.save('test-quran-single-table.pdf');
+            alert('Test PDF with single table format generated successfully!');
         }
     </script>
 </body>
