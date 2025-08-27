@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <h1>PDF Generation Test</h1>
+    <button onclick="testPDF()">Generate Test PDF</button>
+    
+    <script>
+        function testPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Test Arabic text
+            const testData = [
+                ['بِسْمِ ٱللَّهِ', 'In the name of Allah - Noun, genitive case with preposition'],
+                ['ٱلرَّحْمَٰنِ', 'The Most Gracious - Adjective, genitive case'],
+                ['ٱلرَّحِيمِ', 'The Most Merciful - Adjective, genitive case']
+            ];
+            
+            doc.text('Al-Fatiha Word by Word Analysis', 105, 20, { align: 'center' });
+            
+            doc.autoTable({
+                startY: 40,
+                head: [['Arabic Text', 'Description/Notes']],
+                body: testData,
+                theme: 'grid',
+                styles: {
+                    fontSize: 12,
+                    cellPadding: 5
+                },
+                columnStyles: {
+                    0: { 
+                        cellWidth: 60, 
+                        halign: 'right',
+                        fontSize: 14,
+                        fontStyle: 'bold'
+                    },
+                    1: { 
+                        cellWidth: 120, 
+                        halign: 'left'
+                    }
+                }
+            });
+            
+            doc.save('test-quran-pdf.pdf');
+            alert('Test PDF generated successfully!');
+        }
+    </script>
+</body>
+</html>
